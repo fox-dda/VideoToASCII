@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Diagnostics;
 using System.Drawing;
 
@@ -8,42 +7,6 @@ namespace MyFunctions
 {
     public static class F
     {
-        public static string ImageToASCII(string imagePath, int terminalFontSize)
-        {
-            // Load image
-            Bitmap image = new Bitmap(imagePath);
-
-            // Calculate divisioner
-            int divisioner = image.Width / (1280 / terminalFontSize);
-
-            // Image to grayscaled values
-            int[,] grayScaledPixels = new int[image.Height / divisioner + divisioner, image.Width / divisioner + divisioner];
-            int iMax = image.Height - (divisioner / 2);
-            int jMax = image.Width - (divisioner / 2);
-            for (int i = 0; i < iMax; i += divisioner)
-            {
-                for (int j = 0; j < jMax; j += divisioner)
-                {
-                    System.Drawing.Color pixel = image.GetPixel(j + (divisioner / 2), i + (divisioner / 2));
-                    grayScaledPixels[i / divisioner, j / divisioner] = (int)(pixel.R * 0.299f + pixel.G * 0.587f + pixel.B * 0.114f);
-                }
-            }
-
-            // Grayscaled values to ASCII
-            char[] asciiPixels = { '@', '%', '#', 'x', '+', '=', ':', '-', '.', ' ' };
-            string frame = "";
-            for (int i = 0; i < image.Height / divisioner; i++)
-            {
-                for (int j = 0; j < image.Width / divisioner; j++)
-                {
-                    int saturationLevel = (int)((grayScaledPixels[i, j] / 255.0) * (asciiPixels.Length - 1));
-                    frame += asciiPixels[saturationLevel] + "" + asciiPixels[saturationLevel];
-                }
-                frame += '\n';
-            }
-            return frame;
-        }
-
         public static string BitmapToASCII(Bitmap image, int terminalFontSize)
         {
             // Calculate divisioner
@@ -58,19 +21,19 @@ namespace MyFunctions
                 for (int j = 0; j < jMax; j += divisioner)
                 {
                     System.Drawing.Color pixel = image.GetPixel(j + (divisioner / 2), i + (divisioner / 2));
-                    grayScaledPixels[i / divisioner, j / divisioner] = (int)(pixel.R * 0.299f + pixel.G * 0.587f + pixel.B * 0.114f);
+                    grayScaledPixels[i / divisioner, j / divisioner] = (int)(pixel.R * 0.299 + pixel.G * 0.587 + pixel.B * 0.114);
                 }
             }
 
             // Grayscaled values to ASCII
-            char[] asciiPixels = { '@', '%', '#', 'x', '+', '=', ':', '-', '.', ' ' };
+            char[] asciiPixelTable = { '@', '%', '#', 'x', '+', '=', ':', '-', '.', ' ' };
             string frame = "";
             for (int i = 0; i < image.Height / divisioner; i++)
-            {
+            { 
                 for (int j = 0; j < image.Width / divisioner; j++)
                 {
-                    int saturationLevel = (int)((grayScaledPixels[i, j] / 255.0) * (asciiPixels.Length - 1));
-                    frame += asciiPixels[saturationLevel] + "" + asciiPixels[saturationLevel];
+                    int saturationLevel = (int)((grayScaledPixels[i, j] / 255.0) * (asciiPixelTable.Length - 1));
+                    frame += asciiPixelTable[saturationLevel] + "" + asciiPixelTable[saturationLevel];
                 }
                 frame += '\n';
             }
@@ -101,20 +64,6 @@ namespace MyFunctions
                 Console.WriteLine("Average time per frame: " + (sw.Elapsed.TotalMilliseconds / frames.Length));
                 Console.WriteLine("Desired time per frame: " + timeToSleep);
             }
-        }
-
-        public static string BlankFrame(int x, int y)
-        {
-            string frame = "";
-            for (int i = 0; i < y; i++)
-            {
-                for (int j = 0; j < x * 2; j++)
-                {
-                    frame += "@";
-                }
-                frame += "\n";
-            }
-            return frame;
         }
     }
 }
