@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Accord.Video.FFMPEG;
@@ -12,6 +13,8 @@ namespace ConsoleDrawing
 {
     class Program
     {
+        static bool useParallel = true;
+
         [STAThread]
         static void Main(string[] args)
         {
@@ -31,6 +34,10 @@ namespace ConsoleDrawing
                 }
             }
             dialog.Dispose();
+            if(videoName == "")
+            {
+                return;
+            }
 
             // Load video
             VideoFileReader videoFile = new VideoFileReader();
@@ -54,7 +61,6 @@ namespace ConsoleDrawing
             // Frame count information input
             bool renderFullVideo = false;
             int framesToRender = 0;
-            
             do {
                 Console.Clear();
                 Console.Write("Render full video?(Y or N)");
@@ -116,27 +122,55 @@ namespace ConsoleDrawing
                 frameWidth = Console.WindowWidth - 1;
             }
 
-            // Code snippet in order the remove Bitmap array after the video loading is done
+            // Convert frames to ASCII
+            Console.Clear();
+            Console.WriteLine("Building frames..");
             var frameLoadSW = Stopwatch.StartNew();
+
+            if (!useParallel)
             {
-                // Load video frames to bitmaps
-                Console.Clear();
-                Console.WriteLine("Loading frames..");
-                Bitmap[] bitmapArray = new Bitmap[frameCount];
                 for (int i = 0; i < frameCount; i++)
                 {
-                    bitmapArray[i] = videoFile.ReadVideoFrame(i);
+                    Bitmap tempBitmap = videoFile.ReadVideoFrame(i);
+                    frames[i] = F.BitmapToASCII(tempBitmap, frameWidth, frameHeight);
+                    tempBitmap.Dispose();
+                    if (i % 10 == 0)
+                    {
+                        Console.SetCursorPosition(0, 1);
+                        Console.Write($"Frame build progress {i}/{frameCount}");
+                    }
                 }
-                videoFile.Close();
-
-                // Convert bitmaps to ASCII
-                frameLoadSW.Restart();
-                Parallel.For(0, frameCount, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, (i) =>
-                {
-                    frames[i] = F.BitmapToASCII(bitmapArray[i], frameWidth, frameHeight);
-                });
-                frameLoadSW.Stop();
             }
+            else
+            {
+                var frameFromVideoLock = new object();
+                var consoleLock = new object();
+                int frameBuildCounter = 0;
+                Parallel.For(0, frameCount, (i) =>
+                {
+                    Bitmap tempBitmap;
+                    lock (frameFromVideoLock)
+                    {
+                        Console.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId} is working on frame {i}");
+                        tempBitmap = videoFile.ReadVideoFrame(i);
+                        frameBuildCounter++;
+                    }
+                    frames[i] = F.BitmapToASCII(tempBitmap, frameWidth, frameHeight);
+                    tempBitmap.Dispose();
+
+                    if (frameBuildCounter % 10 == 0)
+                    {
+                        lock (consoleLock)
+                        {
+                            Console.SetCursorPosition(0, 1);
+                            Console.Write($"Frame build progress {frameBuildCounter}/{frameCount}");
+                        }
+                    }
+                });
+            }
+            
+            frameLoadSW.Stop();
+            videoFile.Close();
 
             // Wait for input to start rendering
             Console.Clear();
