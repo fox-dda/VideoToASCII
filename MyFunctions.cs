@@ -41,9 +41,15 @@ namespace MyFunctions
 
         public static void RenderFrames(string[] frames, double fps, bool debug)
         {
+            // Calculate time to sleep
             double timeToSleep = ((1.0 / fps) * 1000.0);
 
+            // Console setup
+            Console.BackgroundColor = ConsoleColor.White;
+            Console.ForegroundColor = ConsoleColor.Black;
             Console.Clear();
+
+            // Start the rendering
             var frameTimeSW = Stopwatch.StartNew();
             var totalTimeSW = Stopwatch.StartNew();
             for (int i = 0; i < frames.Length; i++)
