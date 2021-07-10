@@ -7,33 +7,32 @@ namespace MyFunctions
 {
     public static class F
     {
-        public static string BitmapToASCII(Bitmap image, int terminalFontSize)
+        public static string BitmapToASCII(Bitmap loadedImage, int consoleWidth, int consoleHeight)
         {
-            // Calculate divisioner
-            int divisioner = image.Width / (1280 / terminalFontSize);
+            // Calculations
+            int pixelWidthIncrement = loadedImage.Width / consoleWidth;
+            int pixelHeightIncrement = loadedImage.Height / consoleHeight;
 
-            // Image to grayscaled values
-            int[,] grayScaledPixels = new int[image.Height / divisioner + divisioner, image.Width / divisioner + divisioner];
-            int iMax = image.Height - (divisioner / 2);
-            int jMax = image.Width - (divisioner / 2);
-            for (int i = 0; i < iMax; i += divisioner)
+            // Pixels to grayscale
+            int[,] grayScaledPixels = new int[consoleHeight, consoleWidth];
+            for (int y = 0; y < consoleHeight; y++)
             {
-                for (int j = 0; j < jMax; j += divisioner)
+                for (int x = 0; x < consoleWidth; x++)
                 {
-                    System.Drawing.Color pixel = image.GetPixel(j + (divisioner / 2), i + (divisioner / 2));
-                    grayScaledPixels[i / divisioner, j / divisioner] = (int)(pixel.R * 0.299 + pixel.G * 0.587 + pixel.B * 0.114);
+                    Color currentPixel = loadedImage.GetPixel(x * pixelWidthIncrement, y * pixelHeightIncrement);
+                    grayScaledPixels[y, x] = (int)(currentPixel.R * 0.299 + currentPixel.G * 0.587 + currentPixel.B * 0.114);
                 }
             }
 
             // Grayscaled values to ASCII
             char[] asciiPixelTable = { '@', '%', '#', 'x', '+', '=', ':', '-', '.', ' ' };
             string frame = "";
-            for (int i = 0; i < image.Height / divisioner; i++)
-            { 
-                for (int j = 0; j < image.Width / divisioner; j++)
+            for (int y = 0; y < consoleHeight; y++)
+            {
+                for (int x = 0; x < consoleWidth; x++)
                 {
-                    int saturationLevel = (int)((grayScaledPixels[i, j] / 255.0) * (asciiPixelTable.Length - 1));
-                    frame += asciiPixelTable[saturationLevel] + "" + asciiPixelTable[saturationLevel];
+                    int saturationLevel = (int)((grayScaledPixels[y, x] / 255.0) * (asciiPixelTable.Length - 1));
+                    frame += asciiPixelTable[saturationLevel].ToString();
                 }
                 frame += '\n';
             }
@@ -45,23 +44,22 @@ namespace MyFunctions
             double timeToSleep = ((1.0 / fps) * 1000.0);
 
             Console.Clear();
-            var sw = Stopwatch.StartNew();
+            var frameTimeSW = Stopwatch.StartNew();
+            var totalTimeSW = Stopwatch.StartNew();
             for (int i = 0; i < frames.Length; i++)
             {
-                var tempSw = Stopwatch.StartNew();
+                frameTimeSW.Restart();
                 Console.SetCursorPosition(0, 0);
                 Console.Write(frames[i]);
-                while (tempSw.Elapsed.TotalMilliseconds >= timeToSleep)
-                {
-                    break;
-                }
+                while (frameTimeSW.Elapsed.TotalMilliseconds < timeToSleep);
             }
-            sw.Stop();
+            totalTimeSW.Stop();
+            frameTimeSW.Stop();
 
             // Debug
             if (debug)
             {
-                Console.WriteLine("Average time per frame: " + (sw.Elapsed.TotalMilliseconds / frames.Length));
+                Console.WriteLine("Average time per frame: " + (totalTimeSW.Elapsed.TotalMilliseconds / frames.Length));
                 Console.WriteLine("Desired time per frame: " + timeToSleep);
             }
         }

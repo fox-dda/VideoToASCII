@@ -1,21 +1,28 @@
 ﻿using System;
 using System.Diagnostics;
-using MyFunctions;
-using Accord.Video.FFMPEG;
+using System.Drawing;
 using System.Threading.Tasks;
-using System.Threading;
+using Accord.Video.FFMPEG;
+using MyFunctions;
+
 
 namespace ConsoleDrawing
 {
     class Program
     {
-        static int consoleSize = 12;
-        static Mutex videoMutex = new Mutex();
+        const int consoleWidth = 235;
+        const int consoleHeight = 60;
+        const bool useParallel = true;
+        const int threadCount = 4;
+        const bool renderFullVideo = false;
+        const int framesToRender = 1000;
+
         static void Main(string[] args)
         {
             // Wait to start
-            Console.Write($"Change terminal FONT to {consoleSize-1}, MAXIMIZE the terminal window and press ENTER to start frame loading:");
+            Console.Write("MAXIMIZE the terminal and press ENTER to start frame loading:");
             Console.ReadLine();
+            Console.CursorVisible = false;
 
             // Load video
             VideoFileReader videoFile = new VideoFileReader();
@@ -30,55 +37,52 @@ namespace ConsoleDrawing
                 return;
             }
 
-            // Load frames
-            Console.Clear();
-            Console.WriteLine("Loading frames..");
-
-            double frameRate = videoFile.FrameRate.ToDouble();
-            int frameCount = (int)500;//videoFile.FrameCount;
+            // Get video properties
+            int frameCount = renderFullVideo ? (int)videoFile.FrameCount : framesToRender;
             string[] frames = new string[frameCount];
+            double frameRate = videoFile.FrameRate.ToDouble();
+
             var frameLoadStopWatch = Stopwatch.StartNew();
-
-            int frameBuildCounter = 0;
-            Parallel.For(0, frameCount, (i) =>
             {
-                videoMutex.WaitOne();
-                frames[i] = F.BitmapToASCII(videoFile.ReadVideoFrame(i), consoleSize);
-                frameBuildCounter++;
-                videoMutex.ReleaseMutex();
-                if (frameBuildCounter % 10 == 0)
+                // Load video frames to bitmaps
+                Console.Clear();
+                Console.WriteLine("Loading frames..");
+                Bitmap[] bitmapArray = new Bitmap[frameCount];
+                for (int i = 0; i < frameCount; i++)
                 {
-                    Console.SetCursorPosition(0, 1);
-                    Console.Write("ASCII frame build progress: " + frameBuildCounter + "/" + frameCount);
+                    bitmapArray[i] = videoFile.ReadVideoFrame(i);
                 }
-            });
+                videoFile.Close();
 
-            /*
-            for(int i=0; i<frameCount; i++)
-            {
-                frames[i] = F.BitmapToASCII(videoFile.ReadVideoFrame(i), consoleSize);
-                if(i % 10 == 0)
+                // Convert bitmaps to ASCII
+                frameLoadStopWatch.Restart();
+                if (useParallel)
                 {
-                    Console.SetCursorPosition(0, 1);
-                    Console.Write("ASCII frame build progress: " + i + "/" + frameCount);
+                    Parallel.For(0, frameCount, new ParallelOptions { MaxDegreeOfParallelism = threadCount }, (i) =>
+                    {
+                        frames[i] = F.BitmapToASCII(bitmapArray[i], consoleWidth, consoleHeight);
+                    });
                 }
+                else
+                {
+                    for (int i = 0; i < frameCount; i++)
+                    {
+                        frames[i] = F.BitmapToASCII(bitmapArray[i], consoleWidth, consoleHeight);
+                    }
+                }
+                frameLoadStopWatch.Stop();
             }
-            */
-
-            videoFile.Close();
-
-            frameLoadStopWatch.Stop();
 
             // Wait to render
             Console.Clear();
-            Console.Write($"Frame loading complete! Load time: {frameLoadStopWatch.Elapsed.TotalMilliseconds / 1000.0} seconds\nPress ENTER to start rendering!");
+            Console.Write($"Frame loading complete! Load time: {frameLoadStopWatch.Elapsed.TotalMilliseconds / 1000.0} seconds");
+            Console.WriteLine("Press ENTER to start rendering:");
             Console.ReadLine();
 
             // Console setup
             Console.Clear();
             Console.BackgroundColor = ConsoleColor.White;
             Console.ForegroundColor = ConsoleColor.Black;
-            Console.CursorVisible = false;
 
             // Render
             F.RenderFrames(frames, frameRate, true);
