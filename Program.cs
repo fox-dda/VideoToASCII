@@ -10,19 +10,23 @@ namespace ConsoleDrawing
 {
     class Program
     {
-        const int consoleWidth = 235;
-        const int consoleHeight = 60;
+        static int consoleWidth;
+        static int consoleHeight;
         const bool useParallel = true;
         const int threadCount = 4;
         const bool renderFullVideo = false;
-        const int framesToRender = 1000;
+        const int framesToRender = 500;
 
         static void Main(string[] args)
         {
             // Wait to start
             Console.Write("MAXIMIZE the terminal and press ENTER to start frame loading:");
             Console.ReadLine();
+
+            // Set and get console information
             Console.CursorVisible = false;
+            consoleWidth = Console.WindowWidth - 1;
+            consoleHeight = Console.WindowHeight - 1;
 
             // Load video
             VideoFileReader videoFile = new VideoFileReader();
@@ -75,7 +79,7 @@ namespace ConsoleDrawing
 
             // Wait to render
             Console.Clear();
-            Console.Write($"Frame loading complete! Load time: {frameLoadStopWatch.Elapsed.TotalMilliseconds / 1000.0} seconds");
+            Console.WriteLine($"Frame loading complete! Load time: {frameLoadStopWatch.Elapsed.TotalMilliseconds / 1000.0} seconds");
             Console.WriteLine("Press ENTER to start rendering:");
             Console.ReadLine();
 
