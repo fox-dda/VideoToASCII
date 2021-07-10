@@ -143,30 +143,33 @@ namespace ConsoleDrawing
             }
             else
             {
-                var frameFromVideoLock = new object();
-                var consoleLock = new object();
-                int frameBuildCounter = 0;
-                Parallel.For(0, frameCount, (i) =>
+                const int bitmapBuffer = 100;
+                Bitmap[] bitmapArray = new Bitmap[frameCount];
+                for (int i = 0; i < frameCount; i++)
                 {
-                    Bitmap tempBitmap;
-                    lock (frameFromVideoLock)
+                    bitmapArray[i] = videoFile.ReadVideoFrame(i);
+                    if(i != 0 && i % bitmapBuffer == 0)
                     {
-                        Console.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId} is working on frame {i}");
-                        tempBitmap = videoFile.ReadVideoFrame(i);
-                        frameBuildCounter++;
-                    }
-                    frames[i] = F.BitmapToASCII(tempBitmap, frameWidth, frameHeight);
-                    tempBitmap.Dispose();
-
-                    if (frameBuildCounter % 10 == 0)
-                    {
-                        lock (consoleLock)
+                        Parallel.For(i - bitmapBuffer, i, (j) =>
                         {
-                            Console.SetCursorPosition(0, 1);
-                            Console.Write($"Frame build progress {frameBuildCounter}/{frameCount}");
-                        }
+                            frames[j] = F.BitmapToASCII(bitmapArray[j], frameWidth, frameHeight);
+                            bitmapArray[j].Dispose();
+                        });
                     }
-                });
+                    else if (i == frameCount - 1)
+                    {
+                        Parallel.For(frameCount - ((frameCount - 1) % bitmapBuffer), frameCount, (j) =>
+                        {
+                            frames[j] = F.BitmapToASCII(bitmapArray[j], frameWidth, frameHeight);
+                            bitmapArray[j].Dispose();
+                        });
+                    }
+                    if (i % 10 == 0)
+                    {
+                        Console.SetCursorPosition(0, 1);
+                        Console.Write($"Frame build progress {i}/{frameCount}");
+                    }
+                }
             }
             
             frameLoadSW.Stop();
@@ -174,7 +177,7 @@ namespace ConsoleDrawing
 
             // Wait for input to start rendering
             Console.Clear();
-            Console.WriteLine($"Frame loading complete! Load time: {frameLoadSW.Elapsed.TotalMilliseconds / 1000.0} seconds");
+            Console.WriteLine($"Frame building done! Load time: {frameLoadSW.Elapsed.TotalMilliseconds / 1000.0} seconds");
             Console.WriteLine("Press ENTER to start rendering:");
             Console.ReadLine();
 
