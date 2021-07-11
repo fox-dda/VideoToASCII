@@ -143,33 +143,31 @@ namespace ConsoleDrawing
             }
             else
             {
-                const int bitmapBuffer = 100;
-                Bitmap[] bitmapArray = new Bitmap[frameCount];
-                for (int i = 0; i < frameCount; i++)
+                var bitmapLock = new Object();
+                var printLock = new Object();
+                int frameBuildCounter = 0;
+                Parallel.For(0, frameCount, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, (i) => 
                 {
-                    bitmapArray[i] = videoFile.ReadVideoFrame(i);
-                    if(i != 0 && i % bitmapBuffer == 0)
+                    Bitmap tempBitmap;
+                    int tempIndex;
+                    lock (bitmapLock)
                     {
-                        Parallel.For(i - bitmapBuffer, i, (j) =>
+                        tempIndex = frameBuildCounter++;
+                        tempBitmap = videoFile.ReadVideoFrame(tempIndex);
+                    }
+
+                    frames[tempIndex] = F.BitmapToASCII(tempBitmap, frameWidth, frameHeight);
+                    tempBitmap.Dispose();
+                    
+                    if (tempIndex % 10 == 0)
+                    {
+                        lock (printLock)
                         {
-                            frames[j] = F.BitmapToASCII(bitmapArray[j], frameWidth, frameHeight);
-                            bitmapArray[j].Dispose();
-                        });
+                            Console.SetCursorPosition(0, 1);
+                            Console.Write($"Frame build progress {tempIndex}/{frameCount}");
+                        }
                     }
-                    else if (i == frameCount - 1)
-                    {
-                        Parallel.For(frameCount - ((frameCount - 1) % bitmapBuffer), frameCount, (j) =>
-                        {
-                            frames[j] = F.BitmapToASCII(bitmapArray[j], frameWidth, frameHeight);
-                            bitmapArray[j].Dispose();
-                        });
-                    }
-                    if (i % 10 == 0)
-                    {
-                        Console.SetCursorPosition(0, 1);
-                        Console.Write($"Frame build progress {i}/{frameCount}");
-                    }
-                }
+                });
             }
             
             frameLoadSW.Stop();
