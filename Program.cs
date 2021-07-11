@@ -179,9 +179,14 @@ namespace ConsoleDrawing
             Console.WriteLine("Press ENTER to start rendering:");
             Console.ReadLine();
 
-            // Render
-            F.RenderFrames(frames, frameRate, true);
-            Console.ReadLine();
+            // Render with replays
+            while (true)
+            {
+                F.RenderFrames(frames, frameRate, true);
+                Console.Write("Press ENTER to replay!");
+                Console.ReadLine();
+                Console.Clear();
+            }
         }
     }
 }
