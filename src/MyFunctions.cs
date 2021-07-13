@@ -13,25 +13,19 @@ namespace MyFunctions
             int pixelWidthIncrement = loadedImage.Width / consoleWidth;
             int pixelHeightIncrement = loadedImage.Height / consoleHeight;
 
-            // Pixels to grayscale
-            int[,] grayScaledPixels = new int[consoleHeight, consoleWidth];
-            for (int y = 0; y < consoleHeight; y++)
-            {
-                for (int x = 0; x < consoleWidth; x++)
-                {
-                    Color currentPixel = loadedImage.GetPixel(x * pixelWidthIncrement, y * pixelHeightIncrement);
-                    grayScaledPixels[y, x] = (int)(currentPixel.R * 0.299 + currentPixel.G * 0.587 + currentPixel.B * 0.114);
-                }
-            }
-
-            // Grayscaled values to ASCII
+            // Image processing to ASCII
             char[] asciiPixelTable = { '@', '%', '#', 'x', '+', '=', ':', '-', '.', ' ' };
             string frame = "";
             for (int y = 0; y < consoleHeight; y++)
             {
                 for (int x = 0; x < consoleWidth; x++)
                 {
-                    int saturationLevel = (int)((grayScaledPixels[y, x] / 255.0) * (asciiPixelTable.Length - 1));
+                    // Pixels to grayscale
+                    Color currentPixel = loadedImage.GetPixel(x * pixelWidthIncrement, y * pixelHeightIncrement);
+                    int grayScaledPixel = (int)(currentPixel.R * 0.299 + currentPixel.G * 0.587 + currentPixel.B * 0.114);
+
+                    // Grayscaled values to ASCII
+                    int saturationLevel = (int)((grayScaledPixel / 255.0) * (asciiPixelTable.Length - 1));
                     frame += asciiPixelTable[saturationLevel].ToString();
                 }
                 frame += '\n';

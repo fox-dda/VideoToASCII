@@ -44,13 +44,7 @@ namespace ConsoleDrawing
             {
                 videoFile.Open(videoName);
             }
-            catch (System.IO.IOException)
-            {
-                Console.WriteLine($"File \"{videoName}\" doesn't exist or couldn't be opened\nPress Enter to exit..");
-                Console.ReadLine();
-                return;
-            }
-            catch (Accord.Video.VideoException)
+            catch (Exception)
             {
                 Console.WriteLine($"File \"{videoName}\" doesn't exist or couldn't be opened\nPress Enter to exit..");
                 Console.ReadLine();
