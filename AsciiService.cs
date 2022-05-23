@@ -2,11 +2,15 @@
 using System.Diagnostics;
 using System.Drawing;
 
-
-namespace MyFunctions
+namespace VideoToAscii
 {
-    public static class F
+    public static class AsciiService
     {
+        private static char[] _shortAsciiPixelTable = { ' ', '@', '%', '#', 'x', '+', '=', ':', '-', '.', ' ' };
+        private static char[] _longAsciiPixelTable = { '$','@','B','%','8','&','W','M','#','*','o','a','h','k','b','d','p',
+                'q','w','m','Z','O','0','Q','L','C','J','U','Y','X','z','c','v','u','n','x','r','j','f','t',
+                '/','\\','|','(',')','1','[',']','?','-','_','+','~','<','>','i','!','l','I',';',':',',',' ', ' ', ' ' };
+
         public static string BitmapToASCII(Bitmap loadedImage, int consoleWidth, int consoleHeight)
         {
             // Calculations
@@ -14,8 +18,8 @@ namespace MyFunctions
             int pixelHeightIncrement = loadedImage.Height / consoleHeight;
 
             // Image processing to ASCII
-            char[] asciiPixelTable = { '@', '%', '#', 'x', '+', '=', ':', '-', '.', ' ' };
-            string frame = "";
+
+            string frame = string.Empty;
             for (int y = 0; y < consoleHeight; y++)
             {
                 for (int x = 0; x < consoleWidth; x++)
@@ -25,8 +29,8 @@ namespace MyFunctions
                     int grayScaledPixel = (int)(currentPixel.R * 0.299 + currentPixel.G * 0.587 + currentPixel.B * 0.114);
 
                     // Grayscaled values to ASCII
-                    int saturationLevel = (int)((grayScaledPixel / 255.0) * (asciiPixelTable.Length - 1));
-                    frame += asciiPixelTable[saturationLevel].ToString();
+                    int saturationLevel = (int)((grayScaledPixel / 255.0) * (_shortAsciiPixelTable.Length - 1));
+                    frame += _shortAsciiPixelTable[saturationLevel].ToString();
                 }
                 frame += '\n';
             }
@@ -41,6 +45,7 @@ namespace MyFunctions
             // Console setup
             Console.BackgroundColor = ConsoleColor.White;
             Console.ForegroundColor = ConsoleColor.Black;
+
             Console.Clear();
 
             // Start the rendering
